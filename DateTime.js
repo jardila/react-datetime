@@ -42,7 +42,8 @@ var Datetime = createClass({
 		open: TYPES.bool,
 		strictParsing: TYPES.bool,
 		closeOnSelect: TYPES.bool,
-		closeOnTab: TYPES.bool
+		closeOnTab: TYPES.bool,
+		showCurrentDay: TYPES.bool
 	},
 
 	getInitialState: function() {
@@ -314,6 +315,7 @@ var Datetime = createClass({
 	},
 
 	updateSelectedDate: function( e, close ) {
+		
 		var target = e.currentTarget,
 			modifier = 0,
 			viewDate = this.state.viewDate,
@@ -367,6 +369,24 @@ var Datetime = createClass({
 		this.props.onChange( date );
 	},
 
+	setCurrentDay: function() {
+		var date = moment();
+
+		var open = !( this.props.closeOnSelect && close );
+		if ( !open ) {
+			this.props.onBlur( date );
+		}
+		
+		this.setState({
+			selectedDate: date,
+			viewDate: date.clone().startOf('month'),
+			inputValue: date.format( this.state.inputFormat ),
+			open: open
+		});
+
+		this.props.onChange( date );
+	},
+
 	openCalendar: function( e ) {
 		if ( !this.state.open ) {
 			this.setState({ open: true }, function() {
@@ -416,9 +436,9 @@ var Datetime = createClass({
 	},
 
 	componentProps: {
-		fromProps: ['value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
+		fromProps: ['showCurrentDay','value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
 		fromState: ['viewDate', 'selectedDate', 'updateOn'],
-		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
+		fromThis: ['setCurrentDay','setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
 	},
 
 	getComponentProps: function() {
@@ -527,6 +547,7 @@ Datetime.defaultProps = {
 	dateFormat: true,
 	strictParsing: true,
 	closeOnSelect: false,
+	showCurrentDay:true,
 	closeOnTab: true,
 	utc: false
 };

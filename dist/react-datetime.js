@@ -1,5 +1,5 @@
 /*
-react-datetime v2.16.2
+react-datetime v2.16.3
 https://github.com/YouCanBookMe/react-datetime
 MIT: https://github.com/YouCanBookMe/react-datetime/raw/master/LICENSE
 */
@@ -103,10 +103,13 @@ return /******/ (function(modules) { // webpackBootstrap
 			open: TYPES.bool,
 			strictParsing: TYPES.bool,
 			closeOnSelect: TYPES.bool,
-			closeOnTab: TYPES.bool
+			closeOnTab: TYPES.bool,
+			showCurrentDay: TYPES.bool
 		},
 
 		getInitialState: function() {
+			this.checkTZ( this.props );
+			
 			var state = this.getStateFromProps( this.props );
 
 			if ( state.open === undefined )
@@ -114,8 +117,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 			state.currentView = this.props.dateFormat ?
 				(this.props.viewMode || state.updateOn || viewModes.DAYS) : viewModes.TIME;
-
-			this.checkTZ( this.props );
 
 			return state;
 		},
@@ -375,6 +376,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		updateSelectedDate: function( e, close ) {
+			
 			var target = e.currentTarget,
 				modifier = 0,
 				viewDate = this.state.viewDate,
@@ -428,6 +430,24 @@ return /******/ (function(modules) { // webpackBootstrap
 			this.props.onChange( date );
 		},
 
+		setCurrentDay: function() {
+			var date = moment();
+
+			var open = !( this.props.closeOnSelect && close );
+			if ( !open ) {
+				this.props.onBlur( date );
+			}
+			
+			this.setState({
+				selectedDate: date,
+				viewDate: date.clone().startOf('month'),
+				inputValue: date.format( this.state.inputFormat ),
+				open: open
+			});
+
+			this.props.onChange( date );
+		},
+
 		openCalendar: function( e ) {
 			if ( !this.state.open ) {
 				this.setState({ open: true }, function() {
@@ -477,9 +497,9 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		componentProps: {
-			fromProps: ['value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
+			fromProps: ['showCurrentDay','value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
 			fromState: ['viewDate', 'selectedDate', 'updateOn'],
-			fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
+			fromThis: ['setCurrentDay','setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
 		},
 
 		getComponentProps: function() {
@@ -588,6 +608,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		dateFormat: true,
 		strictParsing: true,
 		closeOnSelect: false,
+		showCurrentDay:true,
 		closeOnTab: true,
 		utc: false
 	};
@@ -2810,6 +2831,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var DateTimePickerDays = createClass({
 		render: function() {
 			var footer = this.renderFooter(),
+				currentDay = this.renderCurrentDay(),
 				date = this.props.viewDate,
 				locale = date.localeData(),
 				tableChildren
@@ -2827,8 +2849,9 @@ return /******/ (function(modules) { // webpackBootstrap
 				React.createElement('tbody', { key: 'tb' }, this.renderDays())
 			];
 
-			if ( footer )
+			if ( footer || currentDay)
 				tableChildren.push( footer );
+
 
 			return React.createElement('div', { className: 'rdtDays' },
 				React.createElement('table', {}, tableChildren )
@@ -2921,16 +2944,46 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		renderFooter: function() {
-			if ( !this.props.timeFormat )
+
+			if (!this.props.timeFormat){
+				if(!this.props.showCurrentDay){
+					return '';
+				}else{
+					return React.createElement('tfoot', { key: 'tf'},
+							this.renderCurrentDay()
+						);
+				}
+			}else{
+
+				var date = this.props.selectedDate || this.props.viewDate;
+
+				var render = [React.createElement('tr', {key: 'tf'},
+					React.createElement('td', { onClick: this.props.showView( 'time' ), colSpan: 7, className: 'rdtTimeToggle' }, date.format( this.props.timeFormat ))
+				)];
+
+				if(this.props.showCurrentDay)
+					render.push(this.renderCurrentDay());
+
+				return React.createElement('tfoot', { key: 'tf'},
+						render
+					);
+			}
+		},
+
+		renderCurrentDay: function(){
+			if (!this.props.showCurrentDay)
 				return '';
 
-			var date = this.props.selectedDate || this.props.viewDate;
-
-			return React.createElement('tfoot', { key: 'tf'},
-				React.createElement('tr', {},
-					React.createElement('td', { onClick: this.props.showView( 'time' ), colSpan: 7, className: 'rdtTimeToggle' }, date.format( this.props.timeFormat ))
-				)
-			);
+			return React.createElement('tr', {key: 'tfc'},
+					React.createElement(
+						'td', 
+						{ onClick: this.props.setCurrentDay, colSpan: 7, className: 'rdtTimeToggle' }, 
+						React.createElement('i',{
+							className:'fa fa-clock',
+							title: 'Dia actual'
+						},'')
+					)
+				);
 		},
 
 		alwaysValidDate: function() {
